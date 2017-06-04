@@ -16,6 +16,7 @@
       HardwareSerial *hardPort;
       SoftwareSerial *softPort;
       String olCommand; // we construct here the command that will be passed to the OpenLog
+      long fileSize(String fileName); // Returns the passed file size
 
   };
 

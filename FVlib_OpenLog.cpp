@@ -1,6 +1,8 @@
 #include "FVlib_OpenLog.h"
 
-#define dOL 15 // The delay we give to the OpenLog to process the buffer
+// The delay we give to the OpenLog to process the buffer
+  #define dOL 100 // Less than 30 will give problems 30ok
+
 
 // Constructor:
 openLog::openLog(HardwareSerial &_port) {
@@ -17,96 +19,101 @@ openLog::openLog(HardwareSerial &_port) {
 
 byte openLog::findLastLoggingSession(String loggingFileName) {
   byte index;
-  long loggingFileSize;
+
   char recivedChar;
 
-  //olCommand = String("size test.txt");
-  //(*hardPort).println(olCommand);
   (*hardPort).println("");
   delay(dOL);
-  while((*hardPort).available() > 0) Serial.write((*hardPort).read()); // Clean the buffered
-  delay(1000);
+  while((*hardPort).available() > 0) (*hardPort).read(); // Clean the buffered
 
-  for (index = 1; index <= 10; index++) {
+  for (index = 9; index != 0; index--) {
     olCommand = String("size " + loggingFileName + String(index) + ".txt");
     (*hardPort).println(olCommand);
-    Serial.print("Comprovant fitxer: ");
-    Serial.println(index);
     delay(dOL);
     loggingFileSize = 0;
-    if (((*hardPort).read() == '\r') && ((*hardPort).read() == '\n')) {
+    recivedChar = (*hardPort).read();
+    if (recivedChar == '\r') {
+      recivedChar = (*hardPort).read();
+      if (recivedChar == '\n') {
+        while((*hardPort).available() > 0) {
+          recivedChar = (*hardPort).read();
+          if ((recivedChar == '!') || (recivedChar == '-')) {
+            while((*hardPort).available() > 0) (*hardPort).read();
+            break;
+          }
+          else if ((recivedChar >= '0') && (recivedChar <= '9')) {
+            loggingFileSize = loggingFileSize + (recivedChar - '0');
+            if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
+          }
+        }
+        Serial.print("File: ");
+        Serial.print(olCommand);
+        Serial.print(" size: ");
+        if (recivedChar == '-') {// If result is -1 file does not exist
+          Serial.println("File does not exist!");
+        }
+        else if (recivedChar == '!') {
+          Serial.println("Error");
+        }
+        else {
+          if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
+          Serial.println(loggingFileSize);
+        }
+      }
+    }
+    else {
+      Serial.print(olCommand);
+      Serial.print(" Saltat!:");
+    }
+  }
+  return 0;
+}
+
+long openLog::fileSize(String fileName) {
+  long loggingFileSize;
+
+  olCommand = String("size " + fileName);
+  (*hardPort).println(olCommand);
+  delay(dOL);
+  loggingFileSize = 0;
+  recivedChar = (*hardPort).read();
+  if (recivedChar == '\r') {
+    recivedChar = (*hardPort).read();
+    if (recivedChar == '\n') {
       while((*hardPort).available() > 0) {
         recivedChar = (*hardPort).read();
-        Serial.write(recivedChar);
         if ((recivedChar == '!') || (recivedChar == '-')) {
-          Serial.println("trobat !");
+          while((*hardPort).available() > 0) (*hardPort).read();
           break;
         }
         else if ((recivedChar >= '0') && (recivedChar <= '9')) {
           loggingFileSize = loggingFileSize + (recivedChar - '0');
-          loggingFileSize = loggingFileSize * 10;
+          if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
         }
       }
       Serial.print("File: ");
       Serial.print(olCommand);
       Serial.print(" size: ");
+
       if (recivedChar == '-') {// If result is -1 file does not exist
-        Serial.println("File does not exist!");
+        // File does not exist:
+        //Serial.println("File does not exist!");
+        return 0;
       }
       else if (recivedChar == '!') {
-        Serial.println("Error");
+        // Error:
+        //Serial.println("Error");
+        return 0;
       }
       else {
-        loggingFileSize = loggingFileSize / 10;
-        Serial.println(loggingFileSize);
+        if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
+        //Serial.println(loggingFileSize);
+        return loggingFileSize;
       }
-    }
-    else {
-      Serial.print(olCommand);
-      Serial.println(" Saltat!");
     }
   }
-  return 0;
-
-/*
-  for(conta = 100; conta >= 1; conta--) {
-        Serial2.println("");
-        while(Serial2.available() > 0) {
-          lectura = Serial2.read();
-          delay(15);
-        }
-        comandaSD = String("size CSO" + String(conta) + ".txt");
-        Serial2.println(comandaSD);
-        Serial.println(comandaSD);
-        delay(15);
-        tamanyFitxer = 0;
-        while(Serial2.read() != '\n');
-        delay(15);
-        while(Serial2.available() > 0) {
-          lectura = Serial2.read();
-          if (lectura == '\r') {
-            Serial2.read(); // Treiem del bufer el \n
-            break;
-          }
-          else if (lectura >= '0' && lectura <= '9') {
-            tamanyFitxer = tamanyFitxer + (lectura - '0');
-            tamanyFitxer = tamanyFitxer * 10;
-          }
-          else {
-            Serial.print(lectura);
-          }
-          delay(15);
-        }
-        tamanyFitxer = tamanyFitxer / 10;
-        Serial.print("Tamany del fitxer ");
-        Serial.print(conta);
-        Serial.print(": ");
-        Serial.println(tamanyFitxer);
-        Serial.println("-----------");
-        if (tamanyFitxer != 0) break;
-      }
-      Serial.println("Ultim fitxer lliure:");
-      Serial.println(conta);
-      while(1);
-*/
+  else {
+    // Error:
+    return 0;
+  }
 }
