@@ -6,7 +6,5 @@ The sd must contain a "config.txt" file with the following lines:
 > baud,escape,esc#,mode,verb,echo,ignoreRX
 
 
-findLastLoggingSession
-returns:
-- 0: Ok
-- 1: Error
+findLastLoggingSession (String loggingFileName)
+returns the last file free to log from 1 to 9. If return 255 no free file found found
