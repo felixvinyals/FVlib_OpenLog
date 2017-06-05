@@ -7,9 +7,10 @@
 // Constructor:
 openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog) {
   hardPort = &_port;
+  vccPinOpenlLog = _vccPinOpenlLog;
   (*hardPort).begin(9600);
-  pinMode(_vccPinOpenlLog, OUTPUT);
-  digitalWrite(_vccPinOpenlLog, HIGH);
+  pinMode(vccPinOpenlLog, OUTPUT);
+  digitalWrite(vccPinOpenlLog, HIGH);
 
 
 }
@@ -17,16 +18,24 @@ openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog) {
 
 
 byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
-// Return 0:Ok! 1:Fail
-  return doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
-  /*byte result = 1;
+  // Return:
+    // 0:Ok
+    // 1:Error
+    // 2:No available space
+  byte appendResult = 1;
+
   for (byte attempts = 0; attempts < 3; attempts++) {
-    result = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
-    Serial.println(result);
-    if (result == 0) return 0;
+    appendResult = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+    if (appendResult == 0) return 0;
+    else if (appendResult == 2) return 2;
+    Serial.println("SD rebooted");
+    digitalWrite(vccPinOpenlLog, LOW);
+    delay(1000);
+    digitalWrite(vccPinOpenlLog, HIGH);
+    delay(1000);
   }
   Serial.print("Fail to SD");
-  return 1; // Fail to comunicate with the SD */
+  return 1; // Fail to comunicate with the SD
 }
 
 
@@ -54,19 +63,19 @@ byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _text
   (*hardPort).write(26);
   (*hardPort).write(26);
   (*hardPort).println("");
-  if (!waitForChar('>')) return 3;
+  if (!waitForChar('>')) return 1;
 
   // Enter append mode:
   (*hardPort).println(olCommand);
   if (waitForChar('<')) {
     // We're in append mode now
-    (*hardPort).println("append mode");
+    Serial.println("append mode");
     (*hardPort).print(_textToAppend);
   }
   else {
     // Append mode could not be reached
-    (*hardPort).println("no able append mode");
-    return 4;
+    Serial.println("no able append mode");
+    return 1;
   }
 
   // Exit append mode:
@@ -77,7 +86,7 @@ byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _text
     (*hardPort).println("sync");
     if (waitForChar('>'))  return 0; // Back to the command mode, everything was done!
   }
-  else return 5; // We got stuck in the command mode, error.
+  else return 1; // We got stuck in the command mode, error.
 }
 
 byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit) {

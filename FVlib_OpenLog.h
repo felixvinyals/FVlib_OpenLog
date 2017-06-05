@@ -23,7 +23,7 @@
       boolean waitForChar(char whichChar);
     // Variables:
       HardwareSerial *hardPort;
-      SoftwareSerial *softPort;
+      byte vccPinOpenlLog;
       String olCommand; // we construct here the command that will be passed to the OpenLog
       byte lastLoggingSession = 255;
       unsigned long timeOut;
