@@ -74,6 +74,10 @@ byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _text
 }
 
 byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit) {
+// Return:
+  // 1 to 9: logging session
+  // 255: No available logging sessions
+
   byte index;
   long loggingFileSize;
 
@@ -90,13 +94,16 @@ byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfil
 }
 
 long openLog::fileSize(String fileName) {
-//Return: 0:Error !=0:File Size
+// Return:
+  // 0: File does not exist
+  // 4294967295: Error (we use this weird number because is the largest that a long can handle. Any file will have this size)
+  // else: File Size
   long loggingFileSize;
   char recivedChar;
 
   // Clear the buffer:
   (*hardPort).println("");
-  if (!waitForChar('>')) return 0;
+  if (!waitForChar('>')) return 4294967295;
 
   // Find the size:
   olCommand = String("size " + fileName);
@@ -107,7 +114,7 @@ long openLog::fileSize(String fileName) {
   if (waitForChar('\n') == true) {
     while((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
-      if ((recivedChar == '!') || (recivedChar == '-')) {
+      if (recivedChar == '-') {
         while((*hardPort).available() > 0) (*hardPort).read();
         return 0;
       }
