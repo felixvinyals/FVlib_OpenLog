@@ -1,4 +1,3 @@
-
 ### About ###
 
 * FVlib_OpenLog is a library for Arduino that allows you working with the OpenLog SD module of SparkFun.
@@ -8,4 +7,3 @@
 * felix@felixvinyals.com
 
 * June 2017
-
