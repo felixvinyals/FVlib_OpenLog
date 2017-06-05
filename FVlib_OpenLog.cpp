@@ -1,11 +1,11 @@
 #include "FVlib_OpenLog.h"
 
-// The delay we give to the OpenLog to process the buffer
+// Delay OpenLog, needed for the OpenLog to process the buffer
   #define dOL 100 // Less than 30 will give problems 30ok
 
 
 // Constructor:
-openLog::openLog(HardwareSerial &_port ) {
+openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
   hardPort = &_port;
   (*hardPort).begin(9600);
 
@@ -16,9 +16,61 @@ openLog::openLog(HardwareSerial &_port ) {
   softPort = &_port;
 }*/
 
-/*byte openLog::appendToLastLoggingSession(String textToAppend) {
+byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend) {
+  char recivedChar;
 
-}*/
+  // Initialize SD, useful if SD stopped working
+  (*hardPort).println("init");
+  if (!waitForChar('>')) return 10;
+
+
+  lastLoggingSession = findLastLoggingSession(loggingFileName);
+  if (lastLoggingSession == 255) return 1;
+
+  olCommand = String("append " + loggingFileName + lastLoggingSession + ".txt");
+
+  // Clear the buffer:
+  (*hardPort).write(26);
+  (*hardPort).write(26);
+  (*hardPort).write(26);
+  (*hardPort).println("");
+  delay(dOL);
+  while((*hardPort).available() > 0) (*hardPort).read();
+
+  // Enter append mode:
+  (*hardPort).println(olCommand);
+  delay(dOL);
+  if ((char((*hardPort).read()) == '\r') && (char((*hardPort).read()) == '\n') && (char((*hardPort).read()) == '<')) {
+    // We're in append mode now
+    Serial.println("In append mode");
+    (*hardPort).println(textToAppend);
+    delay(dOL);
+  }
+  else { // Append mode could not be reached
+    Serial.println("Error getting in append mode");
+    return 1;
+  }
+
+  // Exit append mode:
+  Serial.println("Exiting append mode");
+  (*hardPort).write(26);
+  (*hardPort).write(26);
+  (*hardPort).write(26);
+  delay(dOL);
+  delay(dOL);
+  delay(dOL);
+  timeOut = millis();
+  while((millis() - timeOut) < 2000) {
+    if ((*hardPort).available() > 0) {
+      recivedChar = (*hardPort).read();
+      Serial.write(recivedChar);
+      if (recivedChar == '>') {
+        return 0;
+      }
+    }
+  }
+  return 2;
+}
 
 byte openLog::findLastLoggingSession(String loggingFileName) {
   byte index;
@@ -31,10 +83,10 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
     loggingFileSize = fileSize(olCommand);
     Serial.print(olCommand);
     Serial.println(loggingFileSize);
-    if ((loggingFileSize != 0) && (index == 9)) return -1;
-    if (loggingFileSize != 0) return index;
+    if ((loggingFileSize != 0) && (index == 9)) return 255; // No available logging sessions
+    if (loggingFileSize != 0) return index; // Available logging session found
   }
-  return 1;
+  return 1; // Logging session '1' is the last one
 }
 
 long openLog::fileSize(String fileName) {
@@ -87,4 +139,19 @@ long openLog::fileSize(String fileName) {
     // Error:
     return 0;
   }
+}
+
+boolean openLog::waitForChar(char whichChar) {
+  char recivedChar;
+  timeOut = millis();
+  while((millis() - timeOut) < 2000) {
+    if ((*hardPort).available() > 0) {
+      recivedChar = (*hardPort).read();
+      //Serial.write(recivedChar);
+      if (recivedChar == whichChar) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
