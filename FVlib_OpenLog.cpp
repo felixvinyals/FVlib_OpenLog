@@ -87,8 +87,8 @@ byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfil
   // 255: Error
 
   byte index;
-  long loggingFileSize;
-  long bytesFileSizeLimit = (_MBfileSizeLimit * 1048576); // 1048576bytes = 1Mb
+  unsigned long loggingFileSize;
+  unsigned long bytesFileSizeLimit =  _MBfileSizeLimit * 1048576; // 1048576bytes = 1Mb
 
   if (verboseMode) {
     Serial.print("File Size Limit in bytes: ");
@@ -132,12 +132,12 @@ byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfil
   return 255; // Report Error
 }
 
-long openLog::fileSize(String fileName) {
+unsigned long openLog::fileSize(String fileName) {
 // Return:
   // 0: File does not exist
   // 4294967295: Error (we use this weird number because is the largest that a long can handle. Any file will have this size)
   // else: File Size
-  long loggingFileSize;
+  unsigned long loggingFileSize;
   char recivedChar;
 
   // Clear the buffer:
