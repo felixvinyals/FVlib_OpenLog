@@ -8,20 +8,26 @@
   class openLog {
     public:
     // Constructor:
-      openLog(HardwareSerial &_port);
+      openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit);
       //openLog(SoftwareSerial &_port);
     // Functions:
-      byte findLastLoggingSession(String loggingFileName);
-
+      byte appendToLastLoggingSession(String loggingFileName, String textToAppend); 
+      byte findLastLoggingSession(String loggingFileName); // Returns the index of the las logging session
+      long fileSize(String fileName); // Returns the passed file size
     // Variables:
-      byte lastLoggingSession = 255;
+
 
 
     private:
+    // Functions:
+
+      boolean waitForChar(char whichChar);
+    // Variables:
       HardwareSerial *hardPort;
       SoftwareSerial *softPort;
       String olCommand; // we construct here the command that will be passed to the OpenLog
-      long fileSize(String fileName); // Returns the passed file size
+      byte lastLoggingSession = 255;
+      unsigned long timeOut;
 
   };
 
