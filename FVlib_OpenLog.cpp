@@ -76,6 +76,7 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
 }
 
 long openLog::fileSize(String fileName) {
+//Return: 0:Error !=0:File Size
   long loggingFileSize;
   char recivedChar;
 
@@ -88,8 +89,8 @@ long openLog::fileSize(String fileName) {
   (*hardPort).println(olCommand);
   delay(dOL);
   loggingFileSize = 0;
-  recivedChar = (*hardPort).read();
-  if (recivedChar == '\r') {
+
+  if (waitForChar('\r') == true) {
     recivedChar = (*hardPort).read();
     if (recivedChar == '\n') {
       while((*hardPort).available() > 0) {
@@ -120,8 +121,13 @@ boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the
     if ((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
       //Serial.print('.');
-      if (recivedChar == whichChar) {
+      if (whichChar == 1) {
         return true;
+      }
+      else {
+        if (recivedChar == whichChar) {
+          return true;
+        }
       }
     }
   }
