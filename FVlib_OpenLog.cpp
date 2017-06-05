@@ -5,18 +5,17 @@
 
 
 // Constructor:
-openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
+openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog) {
   hardPort = &_port;
   (*hardPort).begin(9600);
+  pinMode(_vccPinOpenlLog, OUTPUT);
+  digitalWrite(_vccPinOpenlLog, HIGH);
+
 
 }
 
-/*openLog::openLog(SoftwareSerial &_port) {
-  hspSel = false;
-  softPort = &_port;
-}*/
 
-<<<<<<< HEAD
+/*
 byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
 // Return 0:Ok! 1:Fail
 return doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
@@ -27,14 +26,11 @@ return doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLi
     if (result == 0) return 0;
   }
   Serial.print("Fail to SD");
-  return 1; // Fail to comunicate with the SD*/
-}
+  return 1; // Fail to comunicate with the SD
+} */
 
 
-byte openLog::doAppendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
-=======
-byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend) {
->>>>>>> parent of c3eab5c... Finished
+byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _textToAppend, unsigned int _MBfileSizeLimit) {
 // Return 0:Ok 1:Error
   char recivedChar;
 
@@ -43,10 +39,10 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   if (!waitForChar('>')) return 1;
 
 
-  lastLoggingSession = findLastLoggingSession(loggingFileName);
+  lastLoggingSession = findLastLoggingSession(_loggingFileName, _MBfileSizeLimit);
   if (lastLoggingSession == 255) return 1;
 
-  olCommand = String("append " + loggingFileName + lastLoggingSession + ".txt");
+  olCommand = String("append " + _loggingFileName + lastLoggingSession + ".txt");
 
   // Clear the buffer:
   (*hardPort).write(26);
@@ -59,7 +55,7 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   (*hardPort).println(olCommand);
   if (waitForChar('<')) {
     // We're in append mode now
-    (*hardPort).print(textToAppend);
+    (*hardPort).print(_textToAppend);
   }
   else {
     // Append mode could not be reached
@@ -77,7 +73,7 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   else return 1; // We got stuck in the command mode, error.
 }
 
-byte openLog::findLastLoggingSession(String loggingFileName) {
+byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit) {
   byte index;
   long loggingFileSize;
 

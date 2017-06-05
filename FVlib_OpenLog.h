@@ -8,29 +8,18 @@
   class openLog {
     public:
     // Constructor:
-      openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit);
-      //openLog(SoftwareSerial &_port);
+      openLog(HardwareSerial &_port, byte vccPinOpenlLog);
     // Functions:
-<<<<<<< HEAD
-      byte appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
+      //byte appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
       byte doAppendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
-=======
-      byte appendToLastLoggingSession(String loggingFileName, String textToAppend); 
-      byte findLastLoggingSession(String loggingFileName); // Returns the index of the las logging session
+      byte findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit); // Returns the index of the las logging session
       long fileSize(String fileName); // Returns the passed file size
->>>>>>> parent of c3eab5c... Finished
     // Variables:
 
 
 
     private:
     // Functions:
-
-<<<<<<< HEAD
-      byte findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit); // Returns the index of the las logging session
-      long fileSize(String fileName); // Returns the passed file size
-=======
->>>>>>> parent of c3eab5c... Finished
       boolean waitForChar(char whichChar);
     // Variables:
       HardwareSerial *hardPort;
