@@ -5,9 +5,13 @@
 
 
 // Constructor:
-openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
+openLog::openLog(HardwareSerial &_port, byte _openLogVCCpin) {
+  openLogVCCpin = _openLogVCCpin;
   hardPort = &_port;
+
   (*hardPort).begin(9600);
+  pinMode(openLogVCCpin, OUTPUT);
+  digitalWrite(openLogVCCpin, HIGH);
 
 }
 
@@ -16,7 +20,18 @@ openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
   softPort = &_port;
 }*/
 
-byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend) {
+byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
+// Return 0:Ok! 1:Fail
+  byte result = 1;
+  for (byte attempts = 0; attempts < 3, attempts++) {
+    result = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+    if (result == 0) return 0;
+  }
+  return 1; // Fail to co
+}
+
+
+byte openLog::doAppendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
 // Return 0:Ok 1:Error
   char recivedChar;
 
@@ -25,7 +40,7 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   if (!waitForChar('>')) return 1;
 
 
-  lastLoggingSession = findLastLoggingSession(loggingFileName);
+  lastLoggingSession = findLastLoggingSession(loggingFileName, _MBfileSizeLimit);
   if (lastLoggingSession == 255) return 1;
 
   olCommand = String("append " + loggingFileName + lastLoggingSession + ".txt");
@@ -59,9 +74,13 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   else return 1; // We got stuck in the command mode, error.
 }
 
-byte openLog::findLastLoggingSession(String loggingFileName) {
+byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit) {
+// Return:
+  // 255:No available logging sessions/Error
+  // else:logging session number
   byte index;
-  long loggingFileSize;
+  long loggingFileSize, limitFileSizeBytes;
+  limitFileSizeBytes = (_MBfileSizeLimit * 1048576); //1mb = 1048576bytes
 
   // Check file from 9 to 1
   for (index = 9; index != 0; index--) {
@@ -69,14 +88,32 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
     loggingFileSize = fileSize(olCommand);
     Serial.print(olCommand);
     Serial.println(loggingFileSize);
-    if ((loggingFileSize != 0) && (index == 9)) return 255; // No available logging sessions
-    if (loggingFileSize != 0) return index; // Available logging session found
+    if ((index == 1) && (loggingFileSize < limitFileSizeBytes)) {
+      Serial.println("Cas 1");
+      return index;
+    }
+    else if ((index == 1) && (loggingFileSize >= limitFileSizeBytes)) {
+      Serial.println("Cas 2");
+      return ++index;
+    }
+    else if ((index == 9) && (loggingFileSize >= limitFileSizeBytes)) {
+      Serial.println("Cas 3");
+      return 255;
+    }
+    else if ((loggingFileSize > 0) && (loggingFileSize < limitFileSizeBytes)) {
+      Serial.println("Cas 4");
+      return index;
+    }
+    else if (loggingFileSize >= limitFileSizeBytes) {
+      Serial.println("Cas 5");
+      return ++index;
+    }
+    else return 255;
   }
-  return 1; // Logging session '1' is the last one
 }
 
 long openLog::fileSize(String fileName) {
-//Return: 0:Error !=0:File Size
+//Return: 0:Error or no file !=0:File Size
   long loggingFileSize;
   char recivedChar;
 

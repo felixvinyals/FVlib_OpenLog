@@ -1,10 +1,12 @@
-# FVlib_OpenLog
-Automated and protected logging sessions against file oversize and other problems
-## Important Considerations ##
-The sd must contain a "config.txt" file with the following lines:
-> 9600,26,3,2,0,0,0
-> baud,escape,esc#,mode,verb,echo,ignoreRX
+# README #
 
+### About ###
 
-findLastLoggingSession (String loggingFileName)
-returns the last file free to log from 1 to 9. If return 255 no free file found found
+* FVlib_OpenLog is a library for Arduino that allows you working with the OpenLog SD module of SparkFun.
+
+* For more information check the Wiki: https://github.com/felixvinyals/FVlib_OpenLog/wiki
+
+* felix@felixvinyals.com
+
+* June 2017
+
