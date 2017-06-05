@@ -42,14 +42,12 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   if (waitForChar('<')) {
     // We're in append mode now
     (*hardPort).print(textToAppend);
-    delay(dOL);
   }
   else {
     // Append mode could not be reached
     return 1;
   }
-
-
+  
   // Exit append mode:
   (*hardPort).write(26);
   (*hardPort).write(26);
