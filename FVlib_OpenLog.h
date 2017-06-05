@@ -10,7 +10,7 @@
     // Constructor:
       openLog(HardwareSerial &_port, byte vccPinOpenlLog);
     // Functions:
-      //byte appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
+      byte appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
       byte doAppendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
       byte findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit); // Returns the index of the las logging session
       long fileSize(String fileName); // Returns the passed file size
