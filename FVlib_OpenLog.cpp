@@ -47,7 +47,7 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
     // Append mode could not be reached
     return 1;
   }
-  
+
   // Exit append mode:
   (*hardPort).write(26);
   (*hardPort).write(26);
@@ -96,25 +96,15 @@ long openLog::fileSize(String fileName) {
         recivedChar = (*hardPort).read();
         if ((recivedChar == '!') || (recivedChar == '-')) {
           while((*hardPort).available() > 0) (*hardPort).read();
-          break;
+          return 0;
         }
         else if ((recivedChar >= '0') && (recivedChar <= '9')) {
           loggingFileSize = loggingFileSize + (recivedChar - '0');
           if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
         }
       }
-      if (recivedChar == '-') { // "-1"
-        // File does not exist:
-        return 0;
-      }
-      else if (recivedChar == '!') {
-        // Error:
-        return 0;
-      }
-      else {
-        if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
-        return loggingFileSize;
-      }
+      if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
+      return loggingFileSize;
     }
   }
   else {
