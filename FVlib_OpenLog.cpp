@@ -90,23 +90,22 @@ long openLog::fileSize(String fileName) {
   delay(dOL);
   loggingFileSize = 0;
 
-  if (waitForChar('\r') == true) {
+  if (waitForChar('\n') == true) {
     recivedChar = (*hardPort).read();
-    if (recivedChar == '\n') {
-      while((*hardPort).available() > 0) {
-        recivedChar = (*hardPort).read();
-        if ((recivedChar == '!') || (recivedChar == '-')) {
-          while((*hardPort).available() > 0) (*hardPort).read();
-          return 0;
-        }
-        else if ((recivedChar >= '0') && (recivedChar <= '9')) {
-          loggingFileSize = loggingFileSize + (recivedChar - '0');
-          if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
-        }
+    while((*hardPort).available() > 0) {
+      recivedChar = (*hardPort).read();
+      if ((recivedChar == '!') || (recivedChar == '-')) {
+        while((*hardPort).available() > 0) (*hardPort).read();
+        return 0;
       }
-      if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
-      return loggingFileSize;
+      else if ((recivedChar >= '0') && (recivedChar <= '9')) {
+        loggingFileSize = loggingFileSize + (recivedChar - '0');
+        if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
+      }
     }
+    if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
+    return loggingFileSize;
+
   }
   else {
     // Error:
