@@ -98,7 +98,6 @@ long openLog::fileSize(String fileName) {
         return 0;
       }
       else if ((recivedChar >= '0') && (recivedChar <= '9')) {
-        Serial.write(recivedChar);
         loggingFileSize = loggingFileSize + (recivedChar - '0');
         if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
       }
