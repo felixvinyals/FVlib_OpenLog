@@ -17,6 +17,7 @@ openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
 }*/
 
 byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend) {
+// Return 0:Ok 1:Error
   char recivedChar;
 
   // Initialize SD, useful if SD stopped working
@@ -38,15 +39,16 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
 
   // Enter append mode:
   (*hardPort).println(olCommand);
-  delay(dOL);
-  if ((char((*hardPort).read()) == '\r') && (char((*hardPort).read()) == '\n') && (char((*hardPort).read()) == '<')) {
+  if (waitForChar('<')) {
     // We're in append mode now
     (*hardPort).print(textToAppend);
     delay(dOL);
   }
-  else { // Append mode could not be reached
+  else {
+    // Append mode could not be reached
     return 1;
   }
+
 
   // Exit append mode:
   (*hardPort).write(26);
