@@ -5,19 +5,37 @@
 
 
 // Constructor:
-openLog::openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit) {
+openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog) {
   hardPort = &_port;
   (*hardPort).begin(9600);
+  pinMode(_vccPinOpenlLog, OUTPUT);
+  digitalWrite(_vccPinOpenlLog, HIGH);
+
 
 }
 
-/*openLog::openLog(SoftwareSerial &_port) {
-  hspSel = false;
-  softPort = &_port;
-}*/
 
-byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend) {
-// Return 0:Ok 1:Error
+
+byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
+// Return 0:Ok! 1:Fail
+  return doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+  /*byte result = 1;
+  for (byte attempts = 0; attempts < 3; attempts++) {
+    result = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+    Serial.println(result);
+    if (result == 0) return 0;
+  }
+  Serial.print("Fail to SD");
+  return 1; // Fail to comunicate with the SD */
+}
+
+
+byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _textToAppend, unsigned int _MBfileSizeLimit) {
+// Return:
+  // 0:Ok
+  // 1:Error
+  // 2:No available space
+
   char recivedChar;
 
   // Initialize SD, useful if SD stopped working
@@ -25,27 +43,30 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   if (!waitForChar('>')) return 1;
 
 
-  lastLoggingSession = findLastLoggingSession(loggingFileName);
+  lastLoggingSession = findLastLoggingSession(_loggingFileName, _MBfileSizeLimit);
   if (lastLoggingSession == 255) return 1;
+  if (lastLoggingSession == 254) return 2;
 
-  olCommand = String("append " + loggingFileName + lastLoggingSession + ".txt");
+  olCommand = String("append " + _loggingFileName + lastLoggingSession + ".txt");
 
   // Clear the buffer:
   (*hardPort).write(26);
   (*hardPort).write(26);
   (*hardPort).write(26);
   (*hardPort).println("");
-  if (!waitForChar('>')) return 1;
+  if (!waitForChar('>')) return 3;
 
   // Enter append mode:
   (*hardPort).println(olCommand);
   if (waitForChar('<')) {
     // We're in append mode now
-    (*hardPort).print(textToAppend);
+    (*hardPort).println("append mode");
+    (*hardPort).print(_textToAppend);
   }
   else {
     // Append mode could not be reached
-    return 1;
+    (*hardPort).println("no able append mode");
+    return 4;
   }
 
   // Exit append mode:
@@ -56,12 +77,21 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
     (*hardPort).println("sync");
     if (waitForChar('>'))  return 0; // Back to the command mode, everything was done!
   }
-  else return 1; // We got stuck in the command mode, error.
+  else return 5; // We got stuck in the command mode, error.
 }
 
-byte openLog::findLastLoggingSession(String loggingFileName) {
+byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit) {
+// Return:
+  // 1 to 9: logging session
+  // 254: No available logging sessions
+  // 255: Error
+
   byte index;
   long loggingFileSize;
+  long bytesFileSizeLimit = (_MBfileSizeLimit * 1048576); // 1048576bytes = 1Mb
+
+  Serial.print("Limit size:");
+  Serial.println(bytesFileSizeLimit);
 
   // Check file from 9 to 1
   for (index = 9; index != 0; index--) {
@@ -69,20 +99,55 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
     loggingFileSize = fileSize(olCommand);
     Serial.print(olCommand);
     Serial.println(loggingFileSize);
-    if ((loggingFileSize != 0) && (index == 9)) return 255; // No available logging sessions
-    if (loggingFileSize != 0) return index; // Available logging session found
+    if (loggingFileSize == 4294967295) return 255; // Report Error
+    else if ((index == 9) && (loggingFileSize >= bytesFileSizeLimit)) {
+      Serial.println("Cas: 1");
+      return 254; // No available logging sessions
+    }
+    else if ((index == 1) && (loggingFileSize >= bytesFileSizeLimit)) {
+      Serial.println("Cas: 2");
+      return ++index;
+    }
+    else if ((index == 1) && (loggingFileSize < bytesFileSizeLimit)) {
+      Serial.println("Cas: 3");
+      return index;
+    }
+    else if ((loggingFileSize != 0) && (loggingFileSize < bytesFileSizeLimit)) {
+      Serial.println("Cas: 4");
+      return index;
+    }
+    else if (loggingFileSize == 0) {
+      Serial.println("Cas: 5");
+    }
+    else if (loggingFileSize >= bytesFileSizeLimit) {
+      Serial.println("Cas: 6");
+      return ++index;
+    }
+    /*
+    else if (loggingFileSize < bytesFileSizeLimit) {
+      Serial.println("Cas: 5");
+      return ++index;
+    }
+    else {
+      Serial.println("Cas: 6");
+      return 255; // Report Error
+    }*/
   }
-  return 1; // Logging session '1' is the last one
+  Serial.println("Cas: 7");
+  return 255; // Report Error
 }
 
 long openLog::fileSize(String fileName) {
-//Return: 0:Error !=0:File Size
+// Return:
+  // 0: File does not exist
+  // 4294967295: Error (we use this weird number because is the largest that a long can handle. Any file will have this size)
+  // else: File Size
   long loggingFileSize;
   char recivedChar;
 
   // Clear the buffer:
   (*hardPort).println("");
-  if (!waitForChar('>')) return 0;
+  if (!waitForChar('>')) return 4294967295;
 
   // Find the size:
   olCommand = String("size " + fileName);
@@ -93,7 +158,7 @@ long openLog::fileSize(String fileName) {
   if (waitForChar('\n') == true) {
     while((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
-      if ((recivedChar == '!') || (recivedChar == '-')) {
+      if (recivedChar == '-') {
         while((*hardPort).available() > 0) (*hardPort).read();
         return 0;
       }
@@ -106,9 +171,8 @@ long openLog::fileSize(String fileName) {
     return loggingFileSize;
 
   }
-  else {
-    // Error:
-    return 0;
+  else { // Error:
+    return 4294967295;
   }
 }
 

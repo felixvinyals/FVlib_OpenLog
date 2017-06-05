@@ -8,11 +8,11 @@
   class openLog {
     public:
     // Constructor:
-      openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit);
-      //openLog(SoftwareSerial &_port);
+      openLog(HardwareSerial &_port, byte vccPinOpenlLog);
     // Functions:
-      byte appendToLastLoggingSession(String loggingFileName, String textToAppend); 
-      byte findLastLoggingSession(String loggingFileName); // Returns the index of the las logging session
+      byte appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
+      byte doAppendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit);
+      byte findLastLoggingSession(String loggingFileName, unsigned int _MBfileSizeLimit); // Returns the index of the las logging session
       long fileSize(String fileName); // Returns the passed file size
     // Variables:
 
@@ -20,7 +20,6 @@
 
     private:
     // Functions:
-
       boolean waitForChar(char whichChar);
     // Variables:
       HardwareSerial *hardPort;
