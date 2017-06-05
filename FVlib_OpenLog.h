@@ -11,15 +11,16 @@
       openLog(HardwareSerial &_port, unsigned int MBfileSizeLimit);
       //openLog(SoftwareSerial &_port);
     // Functions:
-      byte appendToLastLoggingSession(String loggingFileName, String textToAppend);
-      byte findLastLoggingSession(String loggingFileName);
+      byte appendToLastLoggingSession(String loggingFileName, String textToAppend); 
+      byte findLastLoggingSession(String loggingFileName); // Returns the index of the las logging session
+      long fileSize(String fileName); // Returns the passed file size
     // Variables:
 
 
 
     private:
     // Functions:
-      long fileSize(String fileName); // Returns the passed file size
+
       boolean waitForChar(char whichChar);
     // Variables:
       HardwareSerial *hardPort;

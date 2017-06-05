@@ -1,7 +1,7 @@
 #include "FVlib_OpenLog.h"
 
 // Delay OpenLog, needed for the OpenLog to process the buffer
-  #define dOL 100 // Less than 30 will give problems 30ok
+  #define dOL 30 // Less than 30 will give problems 30ok
 
 
 // Constructor:
@@ -21,7 +21,7 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
 
   // Initialize SD, useful if SD stopped working
   (*hardPort).println("init");
-  if (!waitForChar('>')) return 10;
+  if (!waitForChar('>')) return 1;
 
 
   lastLoggingSession = findLastLoggingSession(loggingFileName);
@@ -34,42 +34,29 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
   (*hardPort).write(26);
   (*hardPort).write(26);
   (*hardPort).println("");
-  delay(dOL);
-  while((*hardPort).available() > 0) (*hardPort).read();
+  if (!waitForChar('>')) return 1;
 
   // Enter append mode:
   (*hardPort).println(olCommand);
   delay(dOL);
   if ((char((*hardPort).read()) == '\r') && (char((*hardPort).read()) == '\n') && (char((*hardPort).read()) == '<')) {
     // We're in append mode now
-    Serial.println("In append mode");
-    (*hardPort).println(textToAppend);
+    (*hardPort).print(textToAppend);
     delay(dOL);
   }
   else { // Append mode could not be reached
-    Serial.println("Error getting in append mode");
     return 1;
   }
 
   // Exit append mode:
-  Serial.println("Exiting append mode");
   (*hardPort).write(26);
   (*hardPort).write(26);
   (*hardPort).write(26);
-  delay(dOL);
-  delay(dOL);
-  delay(dOL);
-  timeOut = millis();
-  while((millis() - timeOut) < 2000) {
-    if ((*hardPort).available() > 0) {
-      recivedChar = (*hardPort).read();
-      Serial.write(recivedChar);
-      if (recivedChar == '>') {
-        return 0;
-      }
-    }
+  if (waitForChar('>')) {
+    (*hardPort).println("sync");
+    if (waitForChar('>'))  return 0; // Back to the command mode, everything was done!
   }
-  return 2;
+  else return 1; // We got stuck in the command mode, error.
 }
 
 byte openLog::findLastLoggingSession(String loggingFileName) {
@@ -79,7 +66,6 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
   // Check file from 9 to 1
   for (index = 9; index != 0; index--) {
     olCommand = String(loggingFileName + String(index) + ".txt");
-    //Serial.println(olCommand);
     loggingFileSize = fileSize(olCommand);
     Serial.print(olCommand);
     Serial.println(loggingFileSize);
@@ -95,8 +81,7 @@ long openLog::fileSize(String fileName) {
 
   // Clear the buffer:
   (*hardPort).println("");
-  delay(dOL);
-  while((*hardPort).available() > 0) (*hardPort).read();
+  if (!waitForChar('>')) return 0;
 
   // Find the size:
   olCommand = String("size " + fileName);
@@ -120,17 +105,14 @@ long openLog::fileSize(String fileName) {
       }
       if (recivedChar == '-') { // "-1"
         // File does not exist:
-        //Serial.println("File does not exist!");
         return 0;
       }
       else if (recivedChar == '!') {
         // Error:
-        //Serial.println("Error");
         return 0;
       }
       else {
         if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
-        //Serial.println(loggingFileSize);
         return loggingFileSize;
       }
     }
@@ -141,13 +123,13 @@ long openLog::fileSize(String fileName) {
   }
 }
 
-boolean openLog::waitForChar(char whichChar) {
+boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the char 'whichChar'
   char recivedChar;
   timeOut = millis();
   while((millis() - timeOut) < 2000) {
     if ((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
-      //Serial.write(recivedChar);
+      //Serial.print('.');
       if (recivedChar == whichChar) {
         return true;
       }
