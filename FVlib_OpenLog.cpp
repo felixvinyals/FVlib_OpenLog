@@ -76,6 +76,7 @@ byte openLog::findLastLoggingSession(String loggingFileName) {
 }
 
 long openLog::fileSize(String fileName) {
+  // Return: 0:Error !=0:file size
   long loggingFileSize;
   char recivedChar;
 
@@ -84,43 +85,25 @@ long openLog::fileSize(String fileName) {
   if (!waitForChar('>')) return 0;
 
   // Find the size:
+  loggingFileSize = 0;
   olCommand = String("size " + fileName);
   (*hardPort).println(olCommand);
-  delay(dOL);
-  loggingFileSize = 0;
-  recivedChar = (*hardPort).read();
-  if (recivedChar == '\r') {
+  if (!waitForChar('>')) return 0;
+  if (!waitForChar(NULL)) return 0;
+  while((*hardPort).available() > 0) {
     recivedChar = (*hardPort).read();
-    if (recivedChar == '\n') {
-      while((*hardPort).available() > 0) {
-        recivedChar = (*hardPort).read();
-        if ((recivedChar == '!') || (recivedChar == '-')) {
-          while((*hardPort).available() > 0) (*hardPort).read();
-          break;
-        }
-        else if ((recivedChar >= '0') && (recivedChar <= '9')) {
-          loggingFileSize = loggingFileSize + (recivedChar - '0');
-          if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
-        }
-      }
-      if (recivedChar == '-') { // "-1"
-        // File does not exist:
-        return 0;
-      }
-      else if (recivedChar == '!') {
-        // Error:
-        return 0;
-      }
-      else {
-        if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
-        return loggingFileSize;
-      }
+
+    if ((recivedChar == '!') || (recivedChar == '-')) {
+      while((*hardPort).available() > 0) (*hardPort).read();
+      return 0;
+    }
+    else if ((recivedChar >= '0') && (recivedChar <= '9')) {
+      loggingFileSize = loggingFileSize + (recivedChar - '0');
+      if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
     }
   }
-  else {
-    // Error:
-    return 0;
-  }
+  if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
+  return loggingFileSize;
 }
 
 boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the char 'whichChar'
@@ -130,6 +113,7 @@ boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the
     if ((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
       //Serial.print('.');
+      if (whichChar == NULL) return true; // If we just received a char
       if (recivedChar == whichChar) {
         return true;
       }
@@ -137,3 +121,4 @@ boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the
   }
   return false;
 }
+// ultim
