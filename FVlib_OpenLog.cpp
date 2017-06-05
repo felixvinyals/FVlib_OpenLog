@@ -5,17 +5,14 @@
 
 
 // Constructor:
-openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog) {
+openLog::openLog(HardwareSerial &_port, byte _vccPinOpenlLog, boolean _verboseMode) {
   hardPort = &_port;
   vccPinOpenlLog = _vccPinOpenlLog;
+  verboseMode = _verboseMode;
   (*hardPort).begin(9600);
   pinMode(vccPinOpenlLog, OUTPUT);
   digitalWrite(vccPinOpenlLog, HIGH);
-
-
 }
-
-
 
 byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
   // Return:
@@ -28,30 +25,26 @@ byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAp
     appendResult = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
     if (appendResult == 0) return 0;
     else if (appendResult == 2) return 2;
-    Serial.println("SD rebooted");
+    if (verboseMode) Serial.println("SD rebooted");
     digitalWrite(vccPinOpenlLog, LOW);
     delay(1000);
     digitalWrite(vccPinOpenlLog, HIGH);
     delay(1000);
   }
-  Serial.print("Fail to SD");
+  if (verboseMode) Serial.print("Fail to work with SD");
   return 1; // Fail to comunicate with the SD
 }
-
 
 byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _textToAppend, unsigned int _MBfileSizeLimit) {
 // Return:
   // 0:Ok
   // 1:Error
   // 2:No available space
-
   char recivedChar;
 
   // Initialize SD, useful if SD stopped working
   (*hardPort).println("init");
   if (!waitForChar('>')) return 1;
-
-
   lastLoggingSession = findLastLoggingSession(_loggingFileName, _MBfileSizeLimit);
   if (lastLoggingSession == 255) return 1;
   if (lastLoggingSession == 254) return 2;
@@ -69,12 +62,10 @@ byte openLog::doAppendToLastLoggingSession(String _loggingFileName, String _text
   (*hardPort).println(olCommand);
   if (waitForChar('<')) {
     // We're in append mode now
-    Serial.println("append mode");
     (*hardPort).print(_textToAppend);
   }
   else {
     // Append mode could not be reached
-    Serial.println("no able append mode");
     return 1;
   }
 
@@ -99,50 +90,45 @@ byte openLog::findLastLoggingSession(String loggingFileName, unsigned int _MBfil
   long loggingFileSize;
   long bytesFileSizeLimit = (_MBfileSizeLimit * 1048576); // 1048576bytes = 1Mb
 
-  Serial.print("Limit size:");
-  Serial.println(bytesFileSizeLimit);
-
+  if (verboseMode) {
+    Serial.print("File Size Limit in bytes: ");
+    Serial.println(bytesFileSizeLimit);
+  }
   // Check file from 9 to 1
   for (index = 9; index != 0; index--) {
     olCommand = String(loggingFileName + String(index) + ".txt");
     loggingFileSize = fileSize(olCommand);
-    Serial.print(olCommand);
-    Serial.println(loggingFileSize);
+    if (verboseMode) {
+      Serial.print(olCommand);
+      Serial.print(" --> ");
+      Serial.print(loggingFileSize);
+      Serial.print(" bytes");
+    }
     if (loggingFileSize == 4294967295) return 255; // Report Error
     else if ((index == 9) && (loggingFileSize >= bytesFileSizeLimit)) {
-      Serial.println("Cas: 1");
+      if (verboseMode) Serial.println(" --> Case: 1");
       return 254; // No available logging sessions
     }
     else if ((index == 1) && (loggingFileSize >= bytesFileSizeLimit)) {
-      Serial.println("Cas: 2");
+      if (verboseMode) Serial.println(" --> Case: 2");
       return ++index;
     }
     else if ((index == 1) && (loggingFileSize < bytesFileSizeLimit)) {
-      Serial.println("Cas: 3");
+      if (verboseMode) Serial.println(" --> Case: 3");
       return index;
     }
     else if ((loggingFileSize != 0) && (loggingFileSize < bytesFileSizeLimit)) {
-      Serial.println("Cas: 4");
+      if (verboseMode) Serial.println(" --> Case: 4");
       return index;
     }
     else if (loggingFileSize == 0) {
-      Serial.println("Cas: 5");
+      if (verboseMode) Serial.println(" --> Case: 5");
     }
     else if (loggingFileSize >= bytesFileSizeLimit) {
-      Serial.println("Cas: 6");
+      if (verboseMode) Serial.println(" --> Case: 6");
       return ++index;
     }
-    /*
-    else if (loggingFileSize < bytesFileSizeLimit) {
-      Serial.println("Cas: 5");
-      return ++index;
-    }
-    else {
-      Serial.println("Cas: 6");
-      return 255; // Report Error
-    }*/
   }
-  Serial.println("Cas: 7");
   return 255; // Report Error
 }
 
