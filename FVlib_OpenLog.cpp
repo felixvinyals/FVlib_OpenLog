@@ -22,12 +22,15 @@ openLog::openLog(HardwareSerial &_port, byte _openLogVCCpin) {
 
 byte openLog::appendToLastLoggingSession(String loggingFileName, String textToAppend, unsigned int _MBfileSizeLimit) {
 // Return 0:Ok! 1:Fail
-  byte result = 1;
-  for (byte attempts = 0; attempts < 3, attempts++) {
+return doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+  /*byte result = 1;
+  for (byte attempts = 0; attempts < 3; attempts++) {
     result = doAppendToLastLoggingSession(loggingFileName, textToAppend, _MBfileSizeLimit);
+    Serial.println(result);
     if (result == 0) return 0;
   }
-  return 1; // Fail to co
+  Serial.print("Fail to SD");
+  return 1; // Fail to comunicate with the SD*/
 }
 
 
