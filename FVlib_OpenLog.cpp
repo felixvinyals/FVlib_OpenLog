@@ -91,17 +91,17 @@ long openLog::fileSize(String fileName) {
   loggingFileSize = 0;
 
   if (waitForChar('\n') == true) {
-    recivedChar = (*hardPort).read();
-    while((*hardPort).available() > 0) {
+    while(waitForChar(1)) {
       recivedChar = (*hardPort).read();
       if ((recivedChar == '!') || (recivedChar == '-')) {
-        while((*hardPort).available() > 0) (*hardPort).read();
+        //while((*hardPort).available() > 0) (*hardPort).read();
         return 0;
       }
       else if ((recivedChar >= '0') && (recivedChar <= '9')) {
         loggingFileSize = loggingFileSize + (recivedChar - '0');
         if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
       }
+
     }
     if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize / 10;
     return loggingFileSize;
@@ -118,12 +118,14 @@ boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the
   timeOut = millis();
   while((millis() - timeOut) < 2000) {
     if ((*hardPort).available() > 0) {
-      recivedChar = (*hardPort).read();
-      //Serial.print('.');
+
+
       if (whichChar == 1) {
+        Serial.print("Experem qualsevol");
         return true;
       }
       else {
+        recivedChar = (*hardPort).read();
         if (recivedChar == whichChar) {
           return true;
         }
