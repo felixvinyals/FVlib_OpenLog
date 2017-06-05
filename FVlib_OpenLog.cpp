@@ -91,7 +91,6 @@ long openLog::fileSize(String fileName) {
   loggingFileSize = 0;
 
   if (waitForChar('\n') == true) {
-    recivedChar = (*hardPort).read();
     while((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
       if ((recivedChar == '!') || (recivedChar == '-')) {
@@ -99,6 +98,7 @@ long openLog::fileSize(String fileName) {
         return 0;
       }
       else if ((recivedChar >= '0') && (recivedChar <= '9')) {
+        Serial.write(recivedChar);
         loggingFileSize = loggingFileSize + (recivedChar - '0');
         if (loggingFileSize < 1000000000) loggingFileSize = loggingFileSize * 10;
       }
@@ -119,7 +119,6 @@ boolean openLog::waitForChar(char whichChar) { // Wait for the OL to give us the
   while((millis() - timeOut) < 2000) {
     if ((*hardPort).available() > 0) {
       recivedChar = (*hardPort).read();
-      //Serial.print('.');
       if (whichChar == 1) {
         return true;
       }
