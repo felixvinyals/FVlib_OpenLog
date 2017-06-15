@@ -1,6 +1,6 @@
 #include "FVlib_OpenLog.h"
 
-openLog sd(Serial2, 8, false); // [Serial port connected to the OpenLog], [Wich pin of the Arduino is connected the Vcc of OpenLog], [verbose mode] 
+openLog sd(Serial2, 8, true); // [Serial port connected to the OpenLog], [Which pin of the Arduino is connected the Vcc of OpenLog], [verbose mode] 
 byte sdAppendAsnwer;
 
 void setup() {
